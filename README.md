@@ -160,9 +160,6 @@ Download and prepare EVE Online static data (this takes a while):
 ```bash
 # Download EVE SDE data (Static Data Export) - about 500MB
 docker compose exec app php artisan sde:download
-
-# Process and import the data into the database - takes 10-15 minutes
-docker compose exec app php artisan sde:prepare
 ```
 
 Generate the Laravel application key and set up the database:
@@ -204,6 +201,20 @@ The database settings must be **identical** in these two files:
 - **File:** `wormhole-systems/.env` → Laravel database connection
 
 **Mismatched credentials will prevent the application from connecting to the database.**
+
+### Updating the Application Game Data
+
+To update the EVE Online static data in the future, run these commands:
+
+Download the latest SDE data
+```bash
+docker compose exec app php artisan sde:download
+```
+
+Run the seed command to update static data
+```bash
+docker compose exec app php artisan sde:seed
+```
 
 ## Services
 
