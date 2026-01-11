@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev \
     nodejs \
     npm \
+    wget \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
@@ -29,7 +30,22 @@ RUN install-php-extensions \
     zip \
     redis \
     && rm -rf /tmp/* /var/tmp/*
-    
+
+# Install Supercronic
+RUN arch="$(uname -m)" \
+    && case "$arch" in \
+    armhf) _cronic_fname='supercronic-linux-arm' ;; \
+    aarch64) _cronic_fname='supercronic-linux-arm64' ;; \
+    x86_64) _cronic_fname='supercronic-linux-amd64' ;; \
+    x86) _cronic_fname='supercronic-linux-386' ;; \
+    *) echo >&2 "error: unsupported architecture: $arch"; exit 1 ;; \
+    esac \
+    && wget -q "https://github.com/aptible/supercronic/releases/download/v0.2.38/${_cronic_fname}" \
+    -O /usr/bin/supercronic \
+    && chmod +x /usr/bin/supercronic \
+    && mkdir -p /etc/supercronic \
+    && echo "*/1 * * * * php /app/artisan schedule:run --no-interaction" > /etc/supercronic/laravel
+
 # Set the working directory
 WORKDIR /app
 
@@ -77,6 +93,8 @@ COPY --from=builder /app /app
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
 COPY --from=builder /usr/local/bin/docker-php-ext-* /usr/local/bin/
+COPY --from=builder /usr/bin/supercronic /usr/bin/supercronic
+COPY --from=builder /etc/supercronic/laravel /etc/supercronic/laravel
 
 # Optional: Copy custom PHP configuration if needed (e.g., custom memory limits)
 # FrankenPHP defaults to good production settings, making a full `php.ini` replacement unnecessary.
