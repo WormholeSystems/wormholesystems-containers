@@ -69,7 +69,7 @@ services:
       - ws-internal
     deploy:
       mode: replicated
-      replicas: 5
+      replicas: 10
     volumes:
       - laravel-storage:/app/storage
     command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
@@ -89,13 +89,13 @@ services:
       - ws-internal
     volumes:
       - laravel-storage:/app/storage
-    command: php artisan schedule:work
+    command: ["supercronic", "-overlapping", "/etc/supercronic/laravel"]
     restart: unless-stopped
     depends_on:
       app:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "php artisan schedule:work"]
+      test: ["CMD", "pgrep", "-f", "php /app/artisan schedule:run"]
       interval: 10s
       timeout: 5s
       retries: 3
