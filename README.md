@@ -211,6 +211,11 @@ Download the latest SDE data
 docker compose exec app php artisan sde:download
 ```
 
+Create missing tables and update existing structures if needed
+```bash
+docker compose exec app php artisan migrate
+```
+
 Run the seed command to update static data
 ```bash
 docker compose exec app php artisan sde:seed
