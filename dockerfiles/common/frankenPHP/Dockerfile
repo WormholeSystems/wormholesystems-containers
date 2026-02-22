@@ -60,6 +60,8 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Generate application routes and build assets
 RUN php artisan wayfinder:generate
 RUN npm install
+RUN php artisan sde:download
+RUN php artisan generate:static-data
 RUN npm run build
 
 # ---
@@ -81,6 +83,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY ./dockerfiles/test/frankenPHP/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Install PHP extensions
+# FrankenPHP uses the `install-php-extensions` script.
+# `pdo`, `sockets`, `zip`, and `redis` are often pre-installed or easily added.
+RUN install-php-extensions \
+    pcntl \
+    pdo_mysql \
+    sockets \
+    zip \
+    redis \
+    && rm -rf /tmp/* /var/tmp/*
+
 # Set the working directory
 WORKDIR /app
 
@@ -89,10 +102,7 @@ WORKDIR /app
 # Ensure your Laravel `public` folder is at `/app/public`.
 COPY --from=builder /app /app
 
-# Copy PHP extensions and libraries from the builder stage
-COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
-COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
-COPY --from=builder /usr/local/bin/docker-php-ext-* /usr/local/bin/
+# Copy supercronic and config from the builder stage
 COPY --from=builder /usr/bin/supercronic /usr/bin/supercronic
 COPY --from=builder /etc/supercronic/laravel /etc/supercronic/laravel
 
