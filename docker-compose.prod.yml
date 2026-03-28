@@ -99,6 +99,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+  killmail-listener:
+    image: wormhole-systems:latest
+    tty: true
+    networks:
+      - ws-internal
+    volumes:
+      - laravel-storage:/app/storage
+    command: php artisan app:listen-for-killmails
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "php artisan app:listen-for-killmails"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
   reverb:
     image: wormhole-systems:latest
     tty: true
