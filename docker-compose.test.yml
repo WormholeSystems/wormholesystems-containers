@@ -1,6 +1,7 @@
 services:
   app:
     image: wormhole-systems-test:latest
+    pull_policy: build
     build:
       context: .
       dockerfile: dockerfiles/common/frankenPHP/Dockerfile
@@ -52,6 +53,7 @@ services:
       retries: 3
   queue:
     image: wormhole-systems-test:latest
+    pull_policy: never
     tty: true
     networks:
       - ws-test-internal
@@ -67,6 +69,7 @@ services:
         condition: service_healthy
   scheduler:
     image: wormhole-systems-test:latest
+    pull_policy: never
     tty: true
     networks:
       - ws-test-internal
@@ -79,6 +82,7 @@ services:
         condition: service_healthy
   killmail-listener:
     image: wormhole-systems-test:latest
+    pull_policy: never
     tty: true
     networks:
       - ws-test-internal
@@ -96,6 +100,7 @@ services:
       retries: 3
   reverb:
     image: wormhole-systems-test:latest
+    pull_policy: never
     tty: true
     networks:
       - ws-test-internal
