@@ -1,6 +1,6 @@
 include:
-  #- docker-compose.traefik.yml
-  #- docker-compose.prod.yml
+  - docker-compose.traefik.yml
+  - docker-compose.prod.yml
   # comment two lines above and uncomment below to launch local tests. It is also necessary to comment out the line "URL::forceHttps();" in ./wormhole-systems/app/Provider/AppServiceProvider.php
-  - docker-compose.test.yml
+  #- docker-compose.test.yml
 
