@@ -1,11 +1,24 @@
+x-app-common: &app-common
+  image: wormhole-systems:production
+  build:
+    context: .
+    dockerfile: dockerfiles/common/frankenPHP/Dockerfile
+    args:
+      - VITE_REVERB_APP_KEY
+      - VITE_REVERB_HOST
+      - VITE_REVERB_PORT
+      - VITE_REVERB_SCHEME
+  env_file:
+    - .env
+  networks:
+    - ws-internal
+  volumes:
+    - laravel-storage:/app/storage
+    - ./dockerfiles/common/frankenPHP/php.ini:/usr/local/etc/php/conf.d/custom.ini
+
 services:
   app:
-    image: wormhole-systems:latest
-    build:
-      context: .
-      dockerfile: dockerfiles/common/frankenPHP/Dockerfile
-    environment:
-      SERVER_NAME: ":80"
+    <<: *app-common
     networks:
       - ws-internal
       - web
@@ -22,6 +35,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
@@ -34,24 +49,26 @@ services:
       - "traefik.http.middlewares.secure-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
       - "traefik.http.middlewares.secure-headers.headers.customrequestheaders.X-Forwarded-For="
       - "traefik.http.routers.wormholesystems.middlewares=secure-headers"
+
   mysql:
-    image: mariadb:latest
+    image: mariadb:11.2
     hostname: mysql
+    env_file:
+      - dockerfiles/mysql/.env
     networks:
       - ws-internal
     volumes:
       - mysql-data:/var/lib/mysql
       - mysql-logs:/var/log/mysql
-    env_file:
-      - dockerfiles/mysql/.env
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       start_period: 10s
       interval: 10s
       timeout: 5s
       retries: 3
+
   redis:
-    image: redis:latest
+    image: redis:7.2
     hostname: redis
     networks:
       - ws-internal
@@ -62,16 +79,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
   queue:
-    image: wormhole-systems:latest
+    <<: *app-common
     tty: true
-    networks:
-      - ws-internal
     deploy:
       mode: replicated
       replicas: 10
-    volumes:
-      - laravel-storage:/app/storage
     command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
     restart: unless-stopped
     depends_on:
@@ -82,13 +96,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
   scheduler:
-    image: wormhole-systems:latest
+    <<: *app-common
     tty: true
-    networks:
-      - ws-internal
-    volumes:
-      - laravel-storage:/app/storage
     command: ["supercronic", "-overlapping", "/etc/supercronic/laravel"]
     restart: unless-stopped
     depends_on:
@@ -99,13 +110,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
   killmail-listener:
-    image: wormhole-systems:latest
+    <<: *app-common
     tty: true
-    networks:
-      - ws-internal
-    volumes:
-      - laravel-storage:/app/storage
     command: php artisan app:listen-for-killmails
     restart: unless-stopped
     depends_on:
@@ -116,18 +124,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
   reverb:
-    image: wormhole-systems:latest
+    <<: *app-common
     tty: true
-    networks:
-      - ws-internal
-      - web
-    volumes:
-      - laravel-storage:/app/storage
     depends_on:
       app:
         condition: service_healthy
-    command: php artisan reverb:start --host=${REVERB_HOST:-0.0.0.0} --port=${REVERB_PORT:-8080} --debug
+    command: php artisan reverb:start --host=${REVERB_SERVER_HOST:-0.0.0.0} --port=${REVERB_PORT:-8080} --debug
     restart: ${RESTART_POLICY:-always}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/up"]
@@ -146,6 +150,7 @@ services:
       - "traefik.http.routers.wormholesystems-reverb.entrypoints=websecure"
       - "traefik.http.routers.wormholesystems-reverb.tls.certresolver=primary"
       - "traefik.http.services.reverb.loadbalancer.server.port=${REVERB_PORT:-8080}"
+
 volumes:
   mysql-data:
   laravel-storage:
@@ -154,7 +159,6 @@ volumes:
   # Log volumes for persistent storage
   mysql-logs:
   redis-logs:
-
 
 networks:
   ws-internal:
