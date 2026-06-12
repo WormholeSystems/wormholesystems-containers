@@ -13,7 +13,7 @@ x-app-common: &app-common
   networks:
     - ws-internal
   volumes:
-    - laravel-storage-test:/app/storage
+    - laravel-storage:/app/storage
     - ./dockerfiles/common/frankenPHP/php.ini:/usr/local/etc/php/conf.d/custom.ini
 
 services:
