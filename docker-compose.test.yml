@@ -1,17 +1,31 @@
+x-app-common: &app-common
+  image: wormhole-systems-test:local
+  build:
+    context: .
+    dockerfile: dockerfiles/common/frankenPHP/Dockerfile
+    args:
+      - VITE_REVERB_APP_KEY
+      - VITE_REVERB_HOST
+      - VITE_REVERB_PORT
+      - VITE_REVERB_SCHEME
+  env_file:
+    - .env
+  networks:
+    - ws-test-internal
+  volumes:
+    - laravel-storage-test:/app/storage
+    - ./dockerfiles/common/frankenPHP/php.ini:/usr/local/etc/php/conf.d/custom.ini
+
 services:
   app:
-    image: wormhole-systems-test:latest
-    build:
-      context: .
-      dockerfile: dockerfiles/common/frankenPHP/Dockerfile
-    environment:
-      SERVER_NAME: ":80"
-    networks:
-      - ws-test-internal
+    <<: *app-common
     volumes:
       - laravel-storage-test:/app/storage
       - caddy_data-test:/data
       - caddy_config-test:/config
+      - ./dockerfiles/common/frankenPHP/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    ports:
+      - 80:80
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://127.0.0.1:80/"]
       interval: 10s
@@ -20,26 +34,28 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-    ports:
-      - 80:80
+      redis:
+        condition: service_healthy
+
   mysql:
-    image: mariadb:latest
+    image: mariadb:11.2
     hostname: mysql
+    env_file:
+      - dockerfiles/mysql/.env
     networks:
       - ws-test-internal
     volumes:
       - mysql-test-data:/var/lib/mysql
       - mysql-test-logs:/var/log/mysql
-    env_file:
-      - dockerfiles/mysql/.env
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       start_period: 10s
       interval: 10s
       timeout: 5s
       retries: 3
+
   redis:
-    image: redis:latest
+    image: redis:7.2
     hostname: redis
     networks:
       - ws-test-internal
@@ -50,73 +66,46 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
   queue:
-    image: wormhole-systems-test:latest
+    <<: *app-common
     tty: true
-    networks:
-      - ws-test-internal
-    deploy:
-      mode: replicated
-      replicas: 1
-    volumes:
-      - laravel-storage-test:/app/storage
     command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
     restart: unless-stopped
     depends_on:
-      app:
-        condition: service_healthy
+      - app
+      - mysql
+      - redis
+
   scheduler:
-    image: wormhole-systems-test:latest
+    <<: *app-common
     tty: true
-    networks:
-      - ws-test-internal
-    volumes:
-      - laravel-storage-test:/app/storage
     command: php artisan schedule:work
     restart: unless-stopped
     depends_on:
-      app:
-        condition: service_healthy
-  killmail-listener:
-    image: wormhole-systems-test:latest
-    tty: true
-    networks:
-      - ws-test-internal
-    volumes:
-      - laravel-storage-test:/app/storage
-    command: php artisan app:listen-for-killmails
-    restart: unless-stopped
-    depends_on:
-      app:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "pgrep", "-f", "php artisan app:listen-for-killmails"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - app
+      - mysql
+      - redis
+
   reverb:
-    image: wormhole-systems-test:latest
+    <<: *app-common
     tty: true
-    networks:
-      - ws-test-internal
-    volumes:
-      - laravel-storage-test:/app/storage
-    depends_on:
-      app:
-        condition: service_healthy
-    command: php artisan reverb:start --host=${REVERB_HOST:-0.0.0.0} --port=${REVERB_PORT:-8080} --debug
+    command: php artisan reverb:start --host=${REVERB_SERVER_HOST:-0.0.0.0} --port=${REVERB_PORT:-8080} --debug
     restart: ${RESTART_POLICY:-always}
     ports:
       - 8080:8080
+    depends_on:
+      - app
+      - mysql
+      - redis
+
 volumes:
   mysql-test-data:
   laravel-storage-test:
   caddy_data-test:
   caddy_config-test:
-  # Log volumes for persistent storage
   mysql-test-logs:
   redis-test-logs:
-
 
 networks:
   ws-test-internal:

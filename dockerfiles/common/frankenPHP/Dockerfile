@@ -57,6 +57,18 @@ COPY ./wormhole-systems /app
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && composer install --no-dev --prefer-dist --optimize-autoloader
 
+# Set vite environment variables for asset building
+# Get variables from docker compose file
+ARG VITE_REVERB_APP_KEY
+ARG VITE_REVERB_HOST
+ARG VITE_REVERB_PORT
+ARG VITE_REVERB_SCHEME
+# set environment variables for npm build
+ENV VITE_REVERB_APP_KEY=${VITE_REVERB_APP_KEY}
+ENV VITE_REVERB_HOST=${VITE_REVERB_HOST}
+ENV VITE_REVERB_PORT=${VITE_REVERB_PORT}
+ENV VITE_REVERB_SCHEME=${VITE_REVERB_SCHEME}
+
 # Generate application routes and build assets
 RUN php artisan wayfinder:generate
 RUN npm install
@@ -80,8 +92,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy the initialization script
-COPY ./dockerfiles/test/frankenPHP/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY ./dockerfiles/common/frankenPHP/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Install PHP extensions
 # FrankenPHP uses the `install-php-extensions` script.
@@ -117,3 +130,5 @@ RUN chown -R www-data:www-data /app
 # Set the document root (if different from the default `/app/public`)
 # If your Laravel app uses the standard `public` folder, you can omit this.
 # ENV DOCUMENT_ROOT /app/public
+
+CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]

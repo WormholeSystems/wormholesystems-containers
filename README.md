@@ -20,7 +20,7 @@ First, we need to tell Docker about your domain names and SSL certificate email.
 
 1. Copy the template file:
    ```bash
-   cp .env.example .env
+   cp .env.production.example .env
    ```
 
 2. Open the file for editing:
@@ -84,17 +84,12 @@ Now we configure the Laravel application itself. This is where we tell Laravel h
 
 **Create the Laravel configuration file:**
 
-1. Copy the template file:
+1. Open the file for editing:
    ```bash
-   cp wormhole-systems/.env.example wormhole-systems/.env
+   nano .env
    ```
 
-2. Open the file for editing:
-   ```bash
-   nano wormhole-systems/.env
-   ```
-
-3. Configure the application settings (**Critical:** Database credentials must match Step 2 exactly!):
+2. Configure the application settings (**Critical:** Database credentials must match Step 3 exactly!):
 
 ```bash
 # Application URL (use your domain from Step 1)
@@ -141,13 +136,12 @@ Now we'll build the application image first, then start all services. This will 
 
 First, build just the application image:
 ```bash
-docker compose build app
+docker compose build
 ```
 
 Then start all services:
-*the --build is not really necessary unless you changed some configurations*
 ```bash
-docker compose up --build -d
+docker compose up -d
 ```
 
 **Wait for:** All containers to start (you can check with `docker compose ps`)
@@ -168,7 +162,7 @@ Generate the Laravel application key and set up the database:
 docker compose exec app php artisan key:generate
 
 # Extract the generated key
-# IMPORTANT: Copy this key to wormhole-systems/.env:APP_KEY
+# IMPORTANT: Copy this key to .env:APP_KEY
 docker compose exec app grep APP_KEY .env
 
 # Create database tables and add sample data
@@ -198,7 +192,7 @@ Access your Wormhole Systems application at:
 
 The database settings must be **identical** in these two files:
 - **File:** `dockerfiles/mysql/.env` → MySQL container configuration  
-- **File:** `wormhole-systems/.env` → Laravel database connection
+- **File:** `.env` → Laravel database connection
 
 **Mismatched credentials will prevent the application from connecting to the database.**
 
@@ -223,7 +217,7 @@ docker compose exec app php artisan sde:seed
 
 ## Services
 
-- **wormhole-systems**: PHP-FPM application container
+- **app**: frankenPHP application container
 - **server**: Nginx web server
 - **mysql**: MySQL database
 - **redis**: Redis cache
