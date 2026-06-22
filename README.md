@@ -130,6 +130,22 @@ openssl rand -hex 16         # For REVERB_APP_SECRET (32 alphanumeric chars)
 
 **Critical:** The database settings (DB_DATABASE, DB_USERNAME, DB_PASSWORD) must be identical to what you set in Step 3!
 
+**Optional: Restrict who can log in**
+
+By default anyone with an EVE Online account can log into your instance. To limit access to specific corporations, alliances, or characters, set `ALLOWED_AFFILIATION_IDS` to a comma-separated list of EVE IDs:
+
+```bash
+# Only pilots whose character, corporation, or alliance ID is listed may log in.
+# Leave empty (the default) to allow anyone.
+ALLOWED_AFFILIATION_IDS=99000001,98000002
+```
+
+A pilot is allowed in if their character ID, corporation ID, or alliance ID appears in the list; everyone else is rejected at login. The value is read when the container starts (config is re-cached on boot), so restart the stack after changing it — or re-cache the config in place without a restart:
+
+```bash
+docker compose exec app php artisan optimize
+```
+
 ### Step 5: Build and Start Services
 
 Now we'll build the application image first, then start all services. This will take a few minutes the first time.
