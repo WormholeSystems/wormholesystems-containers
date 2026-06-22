@@ -26,7 +26,7 @@ services:
       - laravel-storage:/app/storage
       - caddy_data:/data
       - caddy_config:/config
-      - ./dockerfiles/production/frankenPHP/php.ini:/usr/local/etc/php/conf.d/custom.ini
+      - ./dockerfiles/common/frankenPHP/php.ini:/usr/local/etc/php/conf.d/custom.ini
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://127.0.0.1:80/up"]
       interval: 10s
