@@ -59,16 +59,15 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
     && composer install --no-dev --prefer-dist --optimize-autoloader
 
 # Set vite environment variables for asset building
-# Get variables from docker compose file
-ARG VITE_REVERB_APP_KEY
-ARG VITE_REVERB_HOST
-ARG VITE_REVERB_PORT
-ARG VITE_REVERB_SCHEME
-# set environment variables for npm build
-ENV VITE_REVERB_APP_KEY=${VITE_REVERB_APP_KEY}
-ENV VITE_REVERB_HOST=${VITE_REVERB_HOST}
-ENV VITE_REVERB_PORT=${VITE_REVERB_PORT}
-ENV VITE_REVERB_SCHEME=${VITE_REVERB_SCHEME}
+# Get variables from docker compose file and set environment variables for npm build
+ARG VITE_REVERB_APP_KEY \
+    VITE_REVERB_HOST \
+    VITE_REVERB_PORT \
+    VITE_REVERB_SCHEME
+ENV VITE_REVERB_APP_KEY=${VITE_REVERB_APP_KEY} \
+    VITE_REVERB_HOST=${VITE_REVERB_HOST} \
+    VITE_REVERB_PORT=${VITE_REVERB_PORT} \
+    VITE_REVERB_SCHEME=${VITE_REVERB_SCHEME}
 
 # Generate application routes and build assets
 RUN php artisan wayfinder:generate
