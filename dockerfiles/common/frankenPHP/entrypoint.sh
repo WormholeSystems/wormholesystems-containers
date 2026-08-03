@@ -37,6 +37,16 @@ echo "Clearing and caching Laravel configurations..."
 php artisan optimize:clear
 php artisan optimize
 
+# Deploy-time Discord lifecycle hooks run only for the main web app process
+# and only when Discord is configured.
+if [ "$1" = "frankenphp" ] && [ -n "$DISCORD_APPLICATION_ID" ]; then
+	echo "Registering Discord slash commands globally..."
+	php artisan discord:register-commands --global
+
+	echo "Restarting Discord bot process..."
+	php artisan discord:restart
+fi
+
 # Run the default command
 echo "Starting the application..."
 echo "$@"
