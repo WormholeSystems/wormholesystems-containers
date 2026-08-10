@@ -154,6 +154,21 @@ services:
       - "traefik.http.routers.wormholesystems-reverb.tls.certresolver=primary"
       - "traefik.http.services.reverb.loadbalancer.server.port=${REVERB_PORT:-8080}"
 
+# if you use the deeper discord integration you will need to uncomment the discord serice in the docker-compose.yml and set these values, otherwise you can leave them as is
+#  discord:
+#    <<: *app-common
+#    tty: true
+#    command: php artisan discord:listen
+#    restart: unless-stopped
+#    depends_on:
+#      app:
+#        condition: service_healthy
+#    healthcheck:
+#      test: ["CMD", "pgrep", "-f", "php artisan discord:listen"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 3
+
 volumes:
   mysql-data:
   laravel-storage:
