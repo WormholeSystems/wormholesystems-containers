@@ -27,6 +27,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
       - ./dockerfiles/common/frankenPHP/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://127.0.0.1:80/up"]
       interval: 10s
@@ -60,6 +61,7 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
       - mysql-logs:/var/log/mysql
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       start_period: 10s
@@ -74,6 +76,7 @@ services:
       - ws-internal
     volumes:
       - redis-logs:/var/log/redis
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
